@@ -1,5 +1,19 @@
-const express  = require('express')
-const bodyParser  = require('body-parser')
+const express  = require('express');
+const bodyParser  = require('body-parser');
+const mongodb= require('mongodb');
+
+(async () => {
+
+const connectingString = 'mongodb://localhost:27017/OceanDB';
+
+console.info('conectando  ao OceanDB');
+
+const options ={
+    useUnifiedTopology: true
+};
+
+const cliente = await mongodb.MongoClient.connect(connectingString, options);
+
 const app = express()
 
 const URL = 3000;
@@ -20,26 +34,20 @@ app.get('/hello', (req, res) => {
     - [DELETE] /mensagens - Remove uma mensagem pelo id
 */
 
-const mensagens = [
-    {
-        "id" : 1,
-        "texto" : "Primeira mensagem"
-    },
-    {
-        "id" : 2,
-        "texto" : "Segunda mensagem"
-    }
-];
+
+// Pegando os dados do banco de dados conectado
+
+const db = cliente.db('OceanDB');
+const mensagens = db.collection('mensagens');
 
 //- [GET] /mensagens - Retorna lista de mensagens
-
-const getMensagensValidas = () => mensagens.filter(Boolean);
+const getMensagensValidas = async () => await mensagens.find({}).toArray();
 
 const getMensagensById = id => mensagens.find(mgs => mgs.id === id);
 
 
-app.get('/mensagens', (req, res) =>{
-    res.send(getMensagensValidas());
+app.get('/mensagens', async (req, res) =>{
+    res.send(await getMensagensValidas());
 })
 
 //- [GET] /mensagens/id - Retorna apenas uma única mensagem pelo id
@@ -109,6 +117,6 @@ app.delete('/mensagens/:id', (req, res) =>{
 app.listen(URL , () => {
     console.info(`App rodando na porta:${URL}`)
 })
-
+})();
 
 
