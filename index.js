@@ -1,7 +1,7 @@
 const express  = require('express');
 const bodyParser  = require('body-parser');
 const mongodb= require('mongodb');
-
+const ObjectId = mongodb.ObjectId;
 (async () => {
 
 const connectingString = 'mongodb://localhost:27017/OceanDB';
@@ -52,9 +52,9 @@ app.get('/mensagens', async (req, res) =>{
 
 //- [GET] /mensagens/id - Retorna apenas uma única mensagem pelo id
 app.get('/mensagens/:id', (req, res) =>{
-    const id = +req.params.id;
+    const id = req.params.id;
 
-    const mensagem = getMensagensById(id);
+    const mensagem = await getMensagensById(id);
     
     if (!mensagem) {
     
@@ -82,20 +82,44 @@ app.post('/mensagens', (req, res) => {
     res.send(mensagem);
 })
 
-app.put('/mensagens/:id', (req, res) =>{
-    const id = +req.params.id;
+app.put('/mensagens/:id', async (req, res) =>{
+    const id = req.params.id;
 
-    const mensagem = getMensagensById(id);
-    
-    const novoTexto = req.body.texto;
+    const novaMensagem = req.body;
 
-    if(!novoTexto){
+    if(!novaMensagem ||
+        !novaMensagem.texto||
+        !novaMensagem.usuario){
         res.send('Mensagem inválida');
 
         return;
     }
 
-    mensagem.texto = novoTexto;
+    const qtde_mensagem = await mensagens.countDocuments({ _id: ObjectId(id) });
+    
+    if (qtde_mensagem !== 1){
+        res.send('mensagem não encontrada');
+        
+        return;
+    }
+
+    const { result } = await mensagens.updateOne(
+        {
+            _id: ObjectId(id)
+        },
+        {
+            $set: novaMensagem
+        }
+    );
+
+        console.log(result);
+        console.log(result.nModified);
+
+        if(result.nModified !== 1){
+            res.send('Ocorreu um erro ao atualizar a mensagem!');
+
+            return;
+        };
 
     res.send(mensagem)
 })
